@@ -12,6 +12,7 @@ public class Movement2D : MonoBehaviour
 {
     [Header("Components")]
     private Rigidbody2D _rb;
+    private Animator _anim;
 
     [Header("Layer Masks")]
     [SerializeField] private LayerMask _groundLayer;
@@ -22,6 +23,7 @@ public class Movement2D : MonoBehaviour
     [SerializeField] private float _groundLinearDrag = 7f;
     private float _horizontalDirection;
     private bool _changingDirection => (_rb.velocity.x > 0f && _horizontalDirection < 0f) || (_rb.velocity.x < 0f && _horizontalDirection > 0f);
+    private bool _facingRight = true;
 
     [Header("Jump Variables")]
     [SerializeField] private float _jumpForce = 12f;
@@ -37,12 +39,32 @@ public class Movement2D : MonoBehaviour
     [SerializeField] private Vector3 _groundRaycastOffset;
     private bool _onGround;
 
-    private void Start() => _rb = GetComponent<Rigidbody2D>();
+    private void Start() {
+        _rb = GetComponent<Rigidbody2D>();
+        _anim = GetComponent<Animator>();
+    }
 
     private void Update()
     {
         _horizontalDirection = GetInput().x;
         if (_canJump) Jump();
+
+        //Animation
+        _anim.SetBool("isGrounded", _onGround);
+        _anim.SetFloat("horizontalDirection", Mathf.Abs(_horizontalDirection));
+        if (_horizontalDirection < 0f && _facingRight)
+        {
+            Flip();
+        }
+        else if(_horizontalDirection > 0f && !_facingRight)
+        {
+            Flip();
+        }
+        if(_rb.velocity.y < 0f)
+        { 
+            _anim.SetBool("isJumping", false);
+            _anim.SetBool("isFalling", true);
+        }
     }
 
     private void FixedUpdate()
@@ -53,6 +75,10 @@ public class Movement2D : MonoBehaviour
         {
             ApplyGroundLinearDrag();
             _extraJumpsValue = _extraJumps;
+
+            //Animation
+            _anim.SetBool("isJumping", false);
+            _anim.SetBool("isFalling", false);
         }
         else
         {
@@ -98,6 +124,10 @@ public class Movement2D : MonoBehaviour
 
         _rb.velocity = new Vector2(_rb.velocity.x, 0f);
         _rb.AddForce(Vector2.up * _jumpForce, ForceMode2D.Impulse);
+
+        //Animation
+        _anim.SetBool("isJumping", true);
+        _anim.SetBool("isFalling", false);
     }
 
     private void FallMultiplier()
@@ -114,6 +144,12 @@ public class Movement2D : MonoBehaviour
         {
             _rb.gravityScale = 1f;
         }
+    }
+
+    void Flip()
+    {
+        _facingRight = !_facingRight;
+        transform.Rotate(0f, 180f, 0f);
     }
 
     private void CheckCollisions()
