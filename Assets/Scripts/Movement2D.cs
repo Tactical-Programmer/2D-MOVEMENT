@@ -6,7 +6,8 @@ using UnityEngine;
 //Set Body type to Dynamic, Collision detection to continuous and Freeze Z rotation
 //Add a Collider (Any will do)
 //Define the ground and wall mask layers
-//Adjust the ground raycast length and ground raycast offset variables for ground check (Activate Gizmos to see)
+//Adjust the ground raycast length and ground raycast offset (only change the X values) variables for ground check (Activate Gizmos to see)
+//Adjust the top raycast length (extend the length pretty far for early corner detection), edge raycast offset and inner raycast offset variables (only change the X values) for jump corner correction check (Activate Gizmos to see)
 
 public class Movement2D : MonoBehaviour
 {
@@ -31,13 +32,23 @@ public class Movement2D : MonoBehaviour
     [SerializeField] private float _fallMultiplier = 8f;
     [SerializeField] private float _lowJumpFallMultiplier = 5f;
     [SerializeField] private int _extraJumps = 1;
+    [SerializeField] private float _hangTime = .1f;
+    [SerializeField] private float _jumpBufferLength = .1f;
     private int _extraJumpsValue;
-    private bool _canJump => Input.GetButtonDown("Jump") && (_onGround || _extraJumpsValue > 0);
+    private float _hangTimeCounter;
+    private float _jumpBufferCounter;
+    private bool _canJump => _jumpBufferCounter > 0f && (_hangTimeCounter > 0f || _extraJumpsValue > 0);
 
     [Header("Ground Collision Variables")]
     [SerializeField] private float _groundRaycastLength;
     [SerializeField] private Vector3 _groundRaycastOffset;
     private bool _onGround;
+
+    [Header("Corner Correction Variables")]
+    [SerializeField] private float _topRaycastLength;
+    [SerializeField] private Vector3 _edgeRaycastOffset;
+    [SerializeField] private Vector3 _innerRaycastOffset;
+    private bool _canCornerCorrect;
 
     private void Start() {
         _rb = GetComponent<Rigidbody2D>();
@@ -47,6 +58,14 @@ public class Movement2D : MonoBehaviour
     private void Update()
     {
         _horizontalDirection = GetInput().x;
+        if (Input.GetButtonDown("Jump"))
+        {
+            _jumpBufferCounter = _jumpBufferLength;
+        }
+        else
+        {
+            _jumpBufferCounter -= Time.deltaTime;
+        }
         if (_canJump) Jump();
 
         //Animation
@@ -75,6 +94,7 @@ public class Movement2D : MonoBehaviour
         {
             ApplyGroundLinearDrag();
             _extraJumpsValue = _extraJumps;
+            _hangTimeCounter = _hangTime;
 
             //Animation
             _anim.SetBool("isJumping", false);
@@ -84,7 +104,9 @@ public class Movement2D : MonoBehaviour
         {
             ApplyAirLinearDrag();
             FallMultiplier();
+            _hangTimeCounter -= Time.deltaTime;
         }
+        if (_canCornerCorrect) CornerCorrect(_rb.velocity.y);
     }
 
     private Vector2 GetInput()
@@ -124,6 +146,8 @@ public class Movement2D : MonoBehaviour
 
         _rb.velocity = new Vector2(_rb.velocity.x, 0f);
         _rb.AddForce(Vector2.up * _jumpForce, ForceMode2D.Impulse);
+        _hangTimeCounter = 0f;
+        _jumpBufferCounter = 0f;
 
         //Animation
         _anim.SetBool("isJumping", true);
@@ -152,16 +176,61 @@ public class Movement2D : MonoBehaviour
         transform.Rotate(0f, 180f, 0f);
     }
 
+    void CornerCorrect(float Yvelocity)
+    {
+        //Push player to the right
+        RaycastHit2D _hit = Physics2D.Raycast(transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength,Vector3.left, _topRaycastLength, _groundLayer);
+        if (_hit.collider != null)
+        {
+            float _newPos = Vector3.Distance(new Vector3(_hit.point.x, transform.position.y, 0f) + Vector3.up * _topRaycastLength,
+                transform.position - _edgeRaycastOffset + Vector3.up * _topRaycastLength);
+            transform.position = new Vector3(transform.position.x + _newPos, transform.position.y, transform.position.z);
+            _rb.velocity = new Vector2(_rb.velocity.x, Yvelocity);
+            return;
+        }
+
+        //Push player to the left
+        _hit = Physics2D.Raycast(transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength, Vector3.right, _topRaycastLength, _groundLayer);
+        if (_hit.collider != null)
+        {
+            float _newPos = Vector3.Distance(new Vector3(_hit.point.x, transform.position.y, 0f) + Vector3.up * _topRaycastLength,
+                transform.position + _edgeRaycastOffset + Vector3.up * _topRaycastLength);
+            transform.position = new Vector3(transform.position.x - _newPos, transform.position.y, transform.position.z);
+            _rb.velocity = new Vector2(_rb.velocity.x, Yvelocity);
+        }
+    }
+
     private void CheckCollisions()
     {
+        //Ground Collisions
         _onGround = Physics2D.Raycast(transform.position + _groundRaycastOffset, Vector2.down, _groundRaycastLength, _groundLayer) ||
                     Physics2D.Raycast(transform.position - _groundRaycastOffset, Vector2.down, _groundRaycastLength, _groundLayer);
+
+        //Corner Collisions
+        _canCornerCorrect = Physics2D.Raycast(transform.position + _edgeRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) &&
+                            !Physics2D.Raycast(transform.position + _innerRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) ||
+                            Physics2D.Raycast(transform.position - _edgeRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) &&
+                            !Physics2D.Raycast(transform.position - _innerRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer);
     }
 
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
+
+        //Ground Check
         Gizmos.DrawLine(transform.position + _groundRaycastOffset, transform.position + _groundRaycastOffset + Vector3.down * _groundRaycastLength);
         Gizmos.DrawLine(transform.position - _groundRaycastOffset, transform.position - _groundRaycastOffset + Vector3.down * _groundRaycastLength);
+
+        //Corner Check
+        Gizmos.DrawLine(transform.position + _edgeRaycastOffset, transform.position + _edgeRaycastOffset + Vector3.up * _topRaycastLength);
+        Gizmos.DrawLine(transform.position - _edgeRaycastOffset, transform.position - _edgeRaycastOffset + Vector3.up * _topRaycastLength);
+        Gizmos.DrawLine(transform.position + _innerRaycastOffset, transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength);
+        Gizmos.DrawLine(transform.position - _innerRaycastOffset, transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength);
+
+        //Corner Distance Check
+        Gizmos.DrawLine(transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength,
+                        transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength + Vector3.left * _topRaycastLength);
+        Gizmos.DrawLine(transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength,
+                        transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength + Vector3.right * _topRaycastLength);
     }
 }
