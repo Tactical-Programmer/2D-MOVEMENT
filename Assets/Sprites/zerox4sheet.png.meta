@@ -373,19 +373,19 @@ TextureImporter:
     second: zerox4sheet_122
   - first:
       213: -8686470516036547671
-    second: zerox4sheet_123
+    second: zero_wallGrab1
   - first:
       213: 4575065376233317745
-    second: zerox4sheet_124
+    second: zero_wallGrab2
   - first:
       213: 2719561962877564338
-    second: zerox4sheet_125
+    second: zero_wallGrab3
   - first:
       213: 5776048382858471500
-    second: zerox4sheet_126
+    second: zero_wallGrab4
   - first:
       213: 3051809102695532578
-    second: zerox4sheet_127
+    second: zero_wallGrab5
   - first:
       213: 2937099389693960316
     second: zerox4sheet_128
@@ -3269,7 +3269,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_123
+      name: zero_wallGrab1
       rect:
         serializedVersion: 2
         x: 136
@@ -3290,7 +3290,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_124
+      name: zero_wallGrab2
       rect:
         serializedVersion: 2
         x: 177
@@ -3311,7 +3311,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_125
+      name: zero_wallGrab3
       rect:
         serializedVersion: 2
         x: 227
@@ -3332,7 +3332,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_126
+      name: zero_wallGrab4
       rect:
         serializedVersion: 2
         x: 277
@@ -3353,7 +3353,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_127
+      name: zero_wallGrab5
       rect:
         serializedVersion: 2
         x: 324
