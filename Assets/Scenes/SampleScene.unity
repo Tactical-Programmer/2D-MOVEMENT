@@ -395,6 +395,7 @@ MonoBehaviour:
   _hangTime: 0.1
   _jumpBufferLength: 0.1
   _wallSlideModifier: 0.5
+  _wallRunModifier: 0.85
   _groundRaycastLength: 0.7
   _groundRaycastOffset: {x: 0.53, y: 0, z: 0}
   _wallRaycastLength: 0.75

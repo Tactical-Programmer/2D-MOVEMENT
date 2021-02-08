@@ -44,9 +44,11 @@ public class Movement2D : MonoBehaviour
     private bool _canJump => _jumpBufferCounter > 0f && (_hangTimeCounter > 0f || _extraJumpsValue > 0);
 
     [Header("Wall Movement Variables")]
-    [SerializeField] private float _wallSlideModifier = 0.25f;
-    private bool _wallGrab => _onWall && !_onGround && Input.GetButton("WallGrab");
-    private bool _wallSlide => _onWall && !_onGround && !Input.GetButton("WallGrab") && _rb.velocity.y < 0f;
+    [SerializeField] private float _wallSlideModifier = 0.5f;
+    [SerializeField] private float _wallRunModifier = 0.85f;
+    private bool _wallGrab => _onWall && !_onGround && Input.GetButton("WallGrab") && !_wallRun;
+    private bool _wallSlide => _onWall && !_onGround && !Input.GetButton("WallGrab") && _rb.velocity.y < 0f && !_wallRun;
+    private bool _wallRun => _onWall && _verticalDirection > 0f;
 
     [Header("Ground Collision Variables")]
     [SerializeField] private float _groundRaycastLength;
@@ -65,12 +67,7 @@ public class Movement2D : MonoBehaviour
     private bool _canCornerCorrect;
 
     //Animation Variables
-    private enum _animStates { Idle , Run , Jump , Fall , Landing , WallGrab };
-    private _animStates _currentState = _animStates.Idle;
-    private _animStates _lastState = _animStates.Idle;
     private bool _isJumping = false;
-    private bool _hasLanded = false;
-    private bool _finishedAnim = true;
 
     private void Start() {
         _rb = GetComponent<Rigidbody2D>();
@@ -108,12 +105,12 @@ public class Movement2D : MonoBehaviour
             FallMultiplier();
             _hangTimeCounter -= Time.fixedDeltaTime;
             _isJumping = false;
-            _hasLanded = false;
         }
         if (_canJump) Jump();
         if (_canCornerCorrect) CornerCorrect(_rb.velocity.y);
         if (_wallGrab) WallGrab();
         if (_wallSlide) WallSlide();
+        if (_wallRun) WallRun();
     }
 
     private Vector2 GetInput()
@@ -195,6 +192,12 @@ public class Movement2D : MonoBehaviour
         StickToWall();
     }
 
+    void WallRun()
+    {
+        _rb.velocity = new Vector2(_rb.velocity.x, _verticalDirection * _maxMoveSpeed * _wallRunModifier);
+        StickToWall();
+    }
+
     void StickToWall()
     {
         //Push player torwards wall
@@ -241,21 +244,6 @@ public class Movement2D : MonoBehaviour
         else
         {
             _anim.SetBool("isGrounded", false);
-            if (_rb.velocity.y < 0f)
-            {
-                if (_wallGrab || _wallSlide)
-                {
-                    _anim.SetBool("WallGrab", true);
-                    _anim.SetBool("isJumping", false);
-                    _anim.SetBool("isFalling", false);
-                }
-                else
-                {
-                    _anim.SetBool("isFalling", true);
-                    _anim.SetBool("isJumping", false);
-                    _anim.SetBool("WallGrab", false);
-                }
-            }
         }
         if (_isJumping)
         {
@@ -265,6 +253,27 @@ public class Movement2D : MonoBehaviour
         else
         {
             _anim.SetBool("isJumping", false);
+        }
+        if (_wallGrab || _wallSlide)
+        {
+            _anim.SetBool("WallGrab", true);
+            _anim.SetBool("isJumping", false);
+            _anim.SetBool("isFalling", false);
+            _anim.SetFloat("verticalDirection", 0f);
+        }
+        else if (_rb.velocity.y < 0f)
+        {
+            _anim.SetBool("isFalling", true);
+            _anim.SetBool("isJumping", false);
+            _anim.SetBool("WallGrab", false);
+            _anim.SetFloat("verticalDirection", 0f);
+        }
+        if (_wallRun)
+        {
+            _anim.SetBool("isJumping", false);
+            _anim.SetBool("isFalling", false);
+            _anim.SetBool("WallGrab", false);
+            _anim.SetFloat("verticalDirection", Mathf.Abs(_verticalDirection));
         }
     }
 
