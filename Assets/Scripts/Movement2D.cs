@@ -47,7 +47,7 @@ public class Movement2D : MonoBehaviour
     [Header("Wall Movement Variables")]
     [SerializeField] private float _wallSlideModifier = 0.5f;
     [SerializeField] private float _wallRunModifier = 0.85f;
-    [SerializeField] private float _wallJumpMovementLerpLength = 0.2f;
+    [SerializeField] private float _wallJumpXVelocityHaltDelay = 0.2f;
     private bool _wallGrab => _onWall && !_onGround && Input.GetButton("WallGrab") && !_wallRun;
     private bool _wallSlide => _onWall && !_onGround && !Input.GetButton("WallGrab") && _rb.velocity.y < 0f && !_wallRun;
     private bool _wallRun => _onWall && _verticalDirection > 0f;
@@ -183,7 +183,7 @@ public class Movement2D : MonoBehaviour
     {
         Vector2 jumpDirection = _onRightWall ? Vector2.left : Vector2.right;
         Jump(Vector2.up + jumpDirection);
-        yield return new WaitForSeconds(_wallJumpMovementLerpLength);
+        yield return new WaitForSeconds(_wallJumpXVelocityHaltDelay);
         _rb.velocity = new Vector2(0f, _rb.velocity.y);
     }
     
