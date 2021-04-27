@@ -27,7 +27,7 @@ public class Movement2D : MonoBehaviour
     private float _verticalDirection;
     private bool _changingDirection => (_rb.velocity.x > 0f && _horizontalDirection < 0f) || (_rb.velocity.x < 0f && _horizontalDirection > 0f);
     private bool _facingRight = true;
-    private bool _canMove => !_wallGrab || !_isDashing;
+    private bool _canMove => !_wallGrab;
 
     [Header("Jump Variables")]
     [SerializeField] private float _jumpForce = 12f;
@@ -51,14 +51,6 @@ public class Movement2D : MonoBehaviour
     private bool _wallGrab => _onWall && !_onGround && Input.GetButton("WallGrab") && !_wallRun;
     private bool _wallSlide => _onWall && !_onGround && !Input.GetButton("WallGrab") && _rb.velocity.y < 0f && !_wallRun;
     private bool _wallRun => _onWall && _verticalDirection > 0f;
-
-    [Header("Dash Variables")]
-    [SerializeField] private float _dashForce = 15f;
-    [SerializeField] private float _dashLength = .15f;
-    [SerializeField] private float _dashBufferLength = .1f;
-    private float _dashBufferCounter;
-    private bool _isDashing;
-    private bool _canDash => !_isDashing && _dashBufferCounter > 0f;
 
     [Header("Ground Collision Variables")]
     [SerializeField] private float _groundRaycastLength;
@@ -86,29 +78,26 @@ public class Movement2D : MonoBehaviour
     {
         _horizontalDirection = GetInput().x;
         _verticalDirection = GetInput().y;
-
         if (Input.GetButtonDown("Jump")) _jumpBufferCounter = _jumpBufferLength;
         else _jumpBufferCounter -= Time.deltaTime;
-
-        if (Input.GetKeyDown(KeyCode.LeftShift)) _dashBufferCounter = _dashBufferLength;
-        else _dashBufferCounter -= Time.deltaTime;
-
         Animation();
     }
-    
+
     private void FixedUpdate()
     {
         CheckCollisions();
-        FallMultiplier();
-        ApplyLinearDrag();
-        /*if (_canMove) MoveCharacter();
+        if (_canMove) MoveCharacter();
+        else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalDirection * _maxMoveSpeed, _rb.velocity.y)), .5f * Time.deltaTime);
         if (_onGround)
         {
+            ApplyGroundLinearDrag();
             _extraJumpsValue = _extraJumps;
             _hangTimeCounter = _hangTime;
         }
         else
         {
+            ApplyAirLinearDrag();
+            FallMultiplier();
             _hangTimeCounter -= Time.fixedDeltaTime;
             if (!_onWall || _rb.velocity.y < 0f || _wallRun) _isJumping = false;
         }
@@ -137,10 +126,8 @@ public class Movement2D : MonoBehaviour
             if (_wallSlide) WallSlide();
             if (_wallGrab) WallGrab();
             if (_wallRun) WallRun();
-            if (_onWall && !_onGround) StickToWall();
-        }*/
-        if (_canDash) Dash(_horizontalDirection, _verticalDirection);
-        Debug.Log("X: " + _rb.velocity.x + "; Y: " + _rb.velocity.y + ";");
+            if (_onWall) StickToWall();
+        }
     }
 
     private Vector2 GetInput()
@@ -152,39 +139,33 @@ public class Movement2D : MonoBehaviour
     {
         _rb.AddForce(new Vector2(_horizontalDirection, 0f) * _movementAcceleration);
 
-        if (Mathf.Abs(_rb.velocity.x) > _maxMoveSpeed && !_isDashing)
+        if (Mathf.Abs(_rb.velocity.x) > _maxMoveSpeed)
             _rb.velocity = new Vector2(Mathf.Sign(_rb.velocity.x) * _maxMoveSpeed, _rb.velocity.y);
     }
 
-    private void ApplyLinearDrag()
+    private void ApplyGroundLinearDrag()
     {
-        if (_isDashing)
+        if (Mathf.Abs(_horizontalDirection) < 0.4f || _changingDirection)
         {
-            _rb.drag = 0f;
-        }
-        else if (_onGround)
-        {
-            if (Mathf.Abs(_horizontalDirection) < 0.4f || _changingDirection)
-            {
-                _rb.drag = _groundLinearDrag;
-            }
-            else
-            {
-                _rb.drag = 0f;
-            }
+            _rb.drag = _groundLinearDrag;
         }
         else
         {
-            _rb.drag = _airLinearDrag;
+            _rb.drag = 0f;
         }
+    }
+
+    private void ApplyAirLinearDrag()
+    {
+         _rb.drag = _airLinearDrag;
     }
 
     private void Jump(Vector2 direction)
     {
-        if (_hangTimeCounter <= 0f && !_onWall)
+        if (!_onGround && !_onWall)
             _extraJumpsValue--;
 
-        _rb.drag = _airLinearDrag;
+        ApplyAirLinearDrag();
         _rb.velocity = new Vector2(_rb.velocity.x, 0f);
         _rb.AddForce(direction * _jumpForce, ForceMode2D.Impulse);
         _hangTimeCounter = 0f;
@@ -205,14 +186,10 @@ public class Movement2D : MonoBehaviour
         yield return new WaitForSeconds(_wallJumpXVelocityHaltDelay);
         _rb.velocity = new Vector2(0f, _rb.velocity.y);
     }
-
+    
     private void FallMultiplier()
     {
-        if (_isDashing)
-        {
-            _rb.gravityScale = 0;
-        }
-        else if (_verticalDirection < 0f)
+        if (_verticalDirection < 0f)
         {
             _rb.gravityScale = _downMultiplier;
         }
@@ -247,39 +224,6 @@ public class Movement2D : MonoBehaviour
     void WallRun()
     {
         _rb.velocity = new Vector2(_rb.velocity.x, _verticalDirection * _maxMoveSpeed * _wallRunModifier);
-    }
-
-    void Dash(float x, float y)
-    {
-        _isDashing = true;
-        Debug.Log("Start Dash...");
-        _rb.velocity = Vector2.zero;
-        _rb.gravityScale = 0;
-        _rb.drag = 0f;
-        Vector2 dir = new Vector2(x, y);
-        Debug.Log("Direction Vector: " + dir);
-        Debug.Log("Dash Force: " + _dashForce);
-
-        if (dir != Vector2.zero)
-        {
-            _rb.AddForce(new Vector2(x, y).normalized * _dashForce, ForceMode2D.Impulse);
-        }
-        else
-        {
-            if (_facingRight) _rb.AddForce(Vector2.right * _dashForce, ForceMode2D.Impulse);
-            else _rb.AddForce(Vector2.left * _dashForce, ForceMode2D.Impulse);
-        }
-
-        StartCoroutine(DashWait());
-    }
-
-    IEnumerator DashWait()
-    {
-        yield return new WaitForSeconds(_dashLength);
-        _rb.gravityScale = 0;
-        _rb.drag = 0f;
-        _isDashing = false;
-        Debug.Log("End Dash!");
     }
 
     void StickToWall()
