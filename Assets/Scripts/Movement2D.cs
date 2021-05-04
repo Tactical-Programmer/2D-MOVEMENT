@@ -18,6 +18,7 @@ public class Movement2D : MonoBehaviour
     [Header("Layer Masks")]
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private LayerMask _wallLayer;
+    [SerializeField] private LayerMask _cornerCorrectLayer;
 
     [Header("Movement Variables")]
     [SerializeField] private float _movementAcceleration = 70f;
@@ -52,6 +53,16 @@ public class Movement2D : MonoBehaviour
     private bool _wallSlide => _onWall && !_onGround && !Input.GetButton("WallGrab") && _rb.velocity.y < 0f && !_wallRun;
     private bool _wallRun => _onWall && _verticalDirection > 0f;
 
+    [Header("Dash Variables")]
+    [SerializeField] private float _dashSpeed = 20f;
+    [SerializeField] private float _dashLength = .3f;
+    [SerializeField] private float _groundDashLength = .15f;
+    [SerializeField] private float _dashBufferLength = .1f;
+    private bool _hasDashed;
+    private bool _isDashing;
+    private float _dashBufferCounter;
+    private bool _canDash => _dashBufferCounter > 0f && !_hasDashed;
+
     [Header("Ground Collision Variables")]
     [SerializeField] private float _groundRaycastLength;
     [SerializeField] private Vector3 _groundRaycastOffset;
@@ -80,54 +91,61 @@ public class Movement2D : MonoBehaviour
         _verticalDirection = GetInput().y;
         if (Input.GetButtonDown("Jump")) _jumpBufferCounter = _jumpBufferLength;
         else _jumpBufferCounter -= Time.deltaTime;
+        if (Input.GetButtonDown("Dash")) _dashBufferCounter = _dashBufferLength;
+        else _dashBufferCounter -= Time.deltaTime;
         Animation();
     }
 
     private void FixedUpdate()
     {
         CheckCollisions();
-        if (_canMove) MoveCharacter();
-        else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalDirection * _maxMoveSpeed, _rb.velocity.y)), .5f * Time.deltaTime);
-        if (_onGround)
+        if (_canDash) StartCoroutine(Dash(_horizontalDirection, _verticalDirection));
+        if (!_isDashing)
         {
-            ApplyGroundLinearDrag();
-            _extraJumpsValue = _extraJumps;
-            _hangTimeCounter = _hangTime;
-        }
-        else
-        {
-            ApplyAirLinearDrag();
-            FallMultiplier();
-            _hangTimeCounter -= Time.fixedDeltaTime;
-            if (!_onWall || _rb.velocity.y < 0f || _wallRun) _isJumping = false;
-        }
-        if (_canJump)
-        {
-            if (_onWall && !_onGround)
+            if (_canMove) MoveCharacter();
+            else _rb.velocity = Vector2.Lerp(_rb.velocity, (new Vector2(_horizontalDirection * _maxMoveSpeed, _rb.velocity.y)), .5f * Time.deltaTime);
+            if (_onGround)
             {
-                if (!_wallRun && (_onRightWall && _horizontalDirection > 0f || !_onRightWall && _horizontalDirection < 0f))
-                {
-                    StartCoroutine(NeutralWallJump());
-                }
-                else
-                {
-                    WallJump();
-                }
-                Flip();
+                ApplyGroundLinearDrag();
+                _extraJumpsValue = _extraJumps;
+                _hangTimeCounter = _hangTime;
+                _hasDashed = false;
             }
             else
             {
-                Jump(Vector2.up);
+                ApplyAirLinearDrag();
+                FallMultiplier();
+                _hangTimeCounter -= Time.fixedDeltaTime;
+                if (!_onWall || _rb.velocity.y < 0f || _wallRun) _isJumping = false;
+            }
+            if (_canJump)
+            {
+                if (_onWall && !_onGround)
+                {
+                    if (!_wallRun && (_onRightWall && _horizontalDirection > 0f || !_onRightWall && _horizontalDirection < 0f))
+                    {
+                        StartCoroutine(NeutralWallJump());
+                    }
+                    else
+                    {
+                        WallJump();
+                    }
+                    Flip();
+                }
+                else
+                {
+                    Jump(Vector2.up);
+                }
+            }
+            if (!_isJumping)
+            {
+                if (_wallSlide) WallSlide();
+                if (_wallGrab) WallGrab();
+                if (_wallRun) WallRun();
+                if (_onWall) StickToWall();
             }
         }
         if (_canCornerCorrect) CornerCorrect(_rb.velocity.y);
-        if (!_isJumping)
-        {
-            if (_wallSlide) WallSlide();
-            if (_wallGrab) WallGrab();
-            if (_wallRun) WallRun();
-            if (_onWall) StickToWall();
-        }
     }
 
     private Vector2 GetInput()
@@ -255,6 +273,35 @@ public class Movement2D : MonoBehaviour
         transform.Rotate(0f, 180f, 0f);
     }
 
+    IEnumerator Dash(float x, float y)
+    {
+        float dashStartTime = Time.time;
+        _hasDashed = true;
+        _isDashing = true;
+        _isJumping = false;
+
+        _rb.velocity = Vector2.zero;
+        _rb.gravityScale = 0f;
+        _rb.drag = 0f;
+
+        Vector2 dir;
+        if (x != 0f || y != 0f) dir = new Vector2(x, y);
+        else
+        {
+            if (_facingRight) dir = new Vector2(1f, 0f);
+            else dir = new Vector2(-1f, 0f);
+        }
+
+        while (Time.time < dashStartTime + _dashLength)
+        {
+            Debug.Log(_rb.velocity);
+            _rb.velocity = dir.normalized * _dashSpeed;
+            yield return null;
+        }
+
+        _isDashing = false;
+    }
+
     void Animation()
     {
         if ((_horizontalDirection < 0f && _facingRight || _horizontalDirection > 0f && !_facingRight) && !_wallGrab && !_wallSlide)
@@ -307,7 +354,7 @@ public class Movement2D : MonoBehaviour
     void CornerCorrect(float Yvelocity)
     {
         //Push player to the right
-        RaycastHit2D _hit = Physics2D.Raycast(transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength,Vector3.left, _topRaycastLength, _groundLayer);
+        RaycastHit2D _hit = Physics2D.Raycast(transform.position - _innerRaycastOffset + Vector3.up * _topRaycastLength,Vector3.left, _topRaycastLength, _cornerCorrectLayer);
         if (_hit.collider != null)
         {
             float _newPos = Vector3.Distance(new Vector3(_hit.point.x, transform.position.y, 0f) + Vector3.up * _topRaycastLength,
@@ -318,7 +365,7 @@ public class Movement2D : MonoBehaviour
         }
 
         //Push player to the left
-        _hit = Physics2D.Raycast(transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength, Vector3.right, _topRaycastLength, _groundLayer);
+        _hit = Physics2D.Raycast(transform.position + _innerRaycastOffset + Vector3.up * _topRaycastLength, Vector3.right, _topRaycastLength, _cornerCorrectLayer);
         if (_hit.collider != null)
         {
             float _newPos = Vector3.Distance(new Vector3(_hit.point.x, transform.position.y, 0f) + Vector3.up * _topRaycastLength,
@@ -335,10 +382,10 @@ public class Movement2D : MonoBehaviour
                     Physics2D.Raycast(transform.position - _groundRaycastOffset, Vector2.down, _groundRaycastLength, _groundLayer);
 
         //Corner Collisions
-        _canCornerCorrect = Physics2D.Raycast(transform.position + _edgeRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) &&
-                            !Physics2D.Raycast(transform.position + _innerRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) ||
-                            Physics2D.Raycast(transform.position - _edgeRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer) &&
-                            !Physics2D.Raycast(transform.position - _innerRaycastOffset, Vector2.up, _topRaycastLength, _groundLayer);
+        _canCornerCorrect = Physics2D.Raycast(transform.position + _edgeRaycastOffset, Vector2.up, _topRaycastLength, _cornerCorrectLayer) &&
+                            !Physics2D.Raycast(transform.position + _innerRaycastOffset, Vector2.up, _topRaycastLength, _cornerCorrectLayer) ||
+                            Physics2D.Raycast(transform.position - _edgeRaycastOffset, Vector2.up, _topRaycastLength, _cornerCorrectLayer) &&
+                            !Physics2D.Raycast(transform.position - _innerRaycastOffset, Vector2.up, _topRaycastLength, _cornerCorrectLayer);
 
         //Wall Collisions
         _onWall = Physics2D.Raycast(transform.position, Vector2.right, _wallRaycastLength, _wallLayer) ||
