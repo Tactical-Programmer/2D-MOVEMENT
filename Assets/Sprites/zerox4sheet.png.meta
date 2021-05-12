@@ -340,37 +340,37 @@ TextureImporter:
     second: zerox4sheet_111
   - first:
       213: -876102377258960063
-    second: zerox4sheet_112
+    second: zeroDash1
   - first:
       213: 3436709784674410061
-    second: zerox4sheet_113
+    second: zeroDash2
   - first:
       213: -4537426854330836685
-    second: zerox4sheet_114
+    second: zeroDash3
   - first:
       213: 8168278493079690005
-    second: zerox4sheet_115
+    second: zeroDash4
   - first:
       213: 7890048854153014714
-    second: zerox4sheet_116
+    second: zeroDash5
   - first:
       213: 5979200298803579408
-    second: zerox4sheet_117
+    second: zeroDash6
   - first:
       213: 6736147698576183307
-    second: zerox4sheet_118
+    second: zeroDash7
   - first:
       213: 8867928976801341539
-    second: zerox4sheet_119
+    second: zeroDash8
   - first:
       213: 2006340275024091284
-    second: zerox4sheet_120
+    second: zeroDash9
   - first:
       213: -6043795979099726953
-    second: zerox4sheet_121
+    second: zeroDash10
   - first:
       213: -932193586231312203
-    second: zerox4sheet_122
+    second: zeroDash11
   - first:
       213: -8686470516036547671
     second: zero_wallGrab1
@@ -587,6 +587,9 @@ TextureImporter:
   - first:
       213: -7776483212032288729
     second: zerox4sheet_194
+  - first:
+      213: 167546590671947283
+    second: zerox4sheet_195
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -3038,7 +3041,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_112
+      name: zeroDash1
       rect:
         serializedVersion: 2
         x: 21
@@ -3059,7 +3062,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_113
+      name: zeroDash2
       rect:
         serializedVersion: 2
         x: 66
@@ -3080,7 +3083,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_114
+      name: zeroDash3
       rect:
         serializedVersion: 2
         x: 111
@@ -3101,7 +3104,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_115
+      name: zeroDash4
       rect:
         serializedVersion: 2
         x: 162
@@ -3122,7 +3125,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_116
+      name: zeroDash5
       rect:
         serializedVersion: 2
         x: 227
@@ -3143,7 +3146,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_117
+      name: zeroDash6
       rect:
         serializedVersion: 2
         x: 293
@@ -3164,7 +3167,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_118
+      name: zeroDash7
       rect:
         serializedVersion: 2
         x: 355
@@ -3185,7 +3188,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_119
+      name: zeroDash8
       rect:
         serializedVersion: 2
         x: 422
@@ -3206,7 +3209,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_120
+      name: zeroDash9
       rect:
         serializedVersion: 2
         x: 473
@@ -3227,7 +3230,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_121
+      name: zeroDash10
       rect:
         serializedVersion: 2
         x: 522
@@ -3248,7 +3251,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zerox4sheet_122
+      name: zeroDash11
       rect:
         serializedVersion: 2
         x: 572

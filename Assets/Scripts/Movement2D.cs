@@ -54,13 +54,12 @@ public class Movement2D : MonoBehaviour
     private bool _wallRun => _onWall && _verticalDirection > 0f;
 
     [Header("Dash Variables")]
-    [SerializeField] private float _dashSpeed = 20f;
+    [SerializeField] private float _dashSpeed = 15f;
     [SerializeField] private float _dashLength = .3f;
-    [SerializeField] private float _groundDashLength = .15f;
     [SerializeField] private float _dashBufferLength = .1f;
-    private bool _hasDashed;
-    private bool _isDashing;
     private float _dashBufferCounter;
+    private bool _isDashing;
+    private bool _hasDashed;
     private bool _canDash => _dashBufferCounter > 0f && !_hasDashed;
 
     [Header("Ground Collision Variables")]
@@ -285,7 +284,7 @@ public class Movement2D : MonoBehaviour
         _rb.drag = 0f;
 
         Vector2 dir;
-        if (x != 0f || y != 0f) dir = new Vector2(x, y);
+        if (x != 0f || y != 0f) dir = new Vector2(x,y);
         else
         {
             if (_facingRight) dir = new Vector2(1f, 0f);
@@ -294,7 +293,6 @@ public class Movement2D : MonoBehaviour
 
         while (Time.time < dashStartTime + _dashLength)
         {
-            Debug.Log(_rb.velocity);
             _rb.velocity = dir.normalized * _dashSpeed;
             yield return null;
         }
@@ -304,49 +302,64 @@ public class Movement2D : MonoBehaviour
 
     void Animation()
     {
-        if ((_horizontalDirection < 0f && _facingRight || _horizontalDirection > 0f && !_facingRight) && !_wallGrab && !_wallSlide)
+        if (_isDashing)
         {
-            Flip();
-        }
-        if (_onGround)
-        {
-            _anim.SetBool("isGrounded", true);
-            _anim.SetBool("isFalling", false);
-            _anim.SetBool("WallGrab", false);
-            _anim.SetFloat("horizontalDirection", Mathf.Abs(_horizontalDirection));
-        }
-        else
-        {
+            _anim.SetBool("isDashing", true);
             _anim.SetBool("isGrounded", false);
-        }
-        if (_isJumping)
-        {
-            _anim.SetBool("isJumping", true);
             _anim.SetBool("isFalling", false);
             _anim.SetBool("WallGrab", false);
+            _anim.SetBool("isJumping", false);
+            _anim.SetFloat("horizontalDirection", 0f);
             _anim.SetFloat("verticalDirection", 0f);
         }
         else
         {
-            _anim.SetBool("isJumping", false);
+            _anim.SetBool("isDashing", false);
 
-            if (_wallGrab || _wallSlide)
+            if ((_horizontalDirection < 0f && _facingRight || _horizontalDirection > 0f && !_facingRight) && !_wallGrab && !_wallSlide)
             {
-                _anim.SetBool("WallGrab", true);
-                _anim.SetBool("isFalling", false);
-                _anim.SetFloat("verticalDirection", 0f);
+                Flip();
             }
-            else if (_rb.velocity.y < 0f)
+            if (_onGround)
             {
-                _anim.SetBool("isFalling", true);
+                _anim.SetBool("isGrounded", true);
+                _anim.SetBool("isFalling", false);
+                _anim.SetBool("WallGrab", false);
+                _anim.SetFloat("horizontalDirection", Mathf.Abs(_horizontalDirection));
+            }
+            else
+            {
+                _anim.SetBool("isGrounded", false);
+            }
+            if (_isJumping)
+            {
+                _anim.SetBool("isJumping", true);
+                _anim.SetBool("isFalling", false);
                 _anim.SetBool("WallGrab", false);
                 _anim.SetFloat("verticalDirection", 0f);
             }
-            if (_wallRun)
+            else
             {
-                _anim.SetBool("isFalling", false);
-                _anim.SetBool("WallGrab", false);
-                _anim.SetFloat("verticalDirection", Mathf.Abs(_verticalDirection));
+                _anim.SetBool("isJumping", false);
+
+                if (_wallGrab || _wallSlide)
+                {
+                    _anim.SetBool("WallGrab", true);
+                    _anim.SetBool("isFalling", false);
+                    _anim.SetFloat("verticalDirection", 0f);
+                }
+                else if (_rb.velocity.y < 0f)
+                {
+                    _anim.SetBool("isFalling", true);
+                    _anim.SetBool("WallGrab", false);
+                    _anim.SetFloat("verticalDirection", 0f);
+                }
+                if (_wallRun)
+                {
+                    _anim.SetBool("isFalling", false);
+                    _anim.SetBool("WallGrab", false);
+                    _anim.SetFloat("verticalDirection", Mathf.Abs(_verticalDirection));
+                }
             }
         }
     }
